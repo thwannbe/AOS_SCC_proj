@@ -126,8 +126,9 @@ obj/: $(OBJ_FILE) $(MT_FILE)
 #$(OBJ_FILE): $(RESET_VEC_BIN) $(GETPROT_BIN) $(IMAGE_BIN) $(LOADMAP)
 #	$(BIN2OBJ_TOOL) -m $(LOADMAP) -o $@
 
-(OBJ_FILE): $(RESET_VEC_BIN) $(GETPROT_BIN) $(KERNEL_BIN) $(LOADMAP)
+$(OBJ_FILE): $(RESET_VEC_BIN) $(GETPROT_BIN) $(KERNEL_BIN) $(LOADMAP)
 	$(BIN2OBJ_TOOL) -m $(LOADMAP) -o $@
+
 
 # Because .S files must be compiled with gcc, not with as
 %.o: %.S
@@ -150,14 +151,9 @@ $(GETPROT_BIN): $(@:%.bin=%.S) ../boot/initPaging.o ld.script
 	$(LD) --oformat binary -Ttext $(GETPROT_ADDR) -melf_i386 -e _start -o $@ $(@:%.bin=%.o) $^
 	chmod a-x $@
 
-#$(GETPROT_BIN): $(@:%.bin=%.S) ../boot/initPaging.o ld.script
-#	$(CC) $(CFLAGS) -DIMG_ADDR=$(IMG_ADDR) -o $(@:%.bin=%.o) $(@:%.bin=%.S)
-#	$(LD) --oformat binary -Ttext $(GETPROT_ADDR) -melf_i386 -e _start -o $@ $(@:%.bin=%.o) $^
-#	chmod a-x $@
-
 ${LIB_ARC}:
 	$(MAKE) -C ${@:%.a=%} install
-
+	
 clean:
 	$(MAKE) -C ${LIBDIR}/${LIBS} clean
 	rm -f $(RESET_VEC_BIN) $(RESET_VEC_BIN:%.bin=%.o) $(GETPROT_BIN) $(GETPROT_BIN:%.bin=%.o) $(IMAGE_BIN) $(IMAGE_BIN:%.bin=%.elf) $(OBJ_FILE) $(MT_FILE) $(O_FILES) $(LOADMAP) ../boot/initPaging.o
@@ -170,13 +166,10 @@ deploy: obj/
 	sccBoot -g $<
 
 run: obj/
-	/opt/sccKit/1.4.0/bin/sccBoot -g $<; /opt/sccKit/1.4.0/bin/sccReset -r $(BOOTCORES)
+	sccBoot -g $<; sccReset -r $(BOOTCORES)
 
 $(LOADMAP):
 	@echo "$(GETPROT_ADDR) $(GETPROT_BIN)" > $(LOADMAP)
-	#@echo "$(IMG_ADDR) $(IMAGE_BIN)" >> $(LOADMAP)
-	#@echo "$(RESET_VEC_ADDR) $(RESET_VEC_BIN)" >> $(LOADMAP)
-	#@echo "$(OBL_ADDR) $(OBL_BIN)" > $(LOADMAP)
 	@echo "$(KERNEL_ADDR) $(KERNEL_BIN)" >> $(LOADMAP)
 	@echo "$(RESET_VEC_ADDR) $(RESET_VEC_BIN)" >> $(LOADMAP)
 
