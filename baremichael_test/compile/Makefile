@@ -40,7 +40,7 @@ IMG_ADDR = 0x18000000
 RESET_VEC_ADDR = 0xfffff000
 
 OBL_ADDR = 0x00001000
-KERNEL_ADDR = 0x00090200 
+KERNEL_ADDR = 0x00100000 
 
 #LDFLAGS = --oformat binary -Ttext $(IMG_ADDR) -melf_i386 -e _start
 LDFLAGS = -Ttext $(IMG_ADDR) -melf_i386 -e _start
@@ -78,7 +78,8 @@ OBJ_FILE = battle.obj
 MT_FILE  = battle.mt
 
 OBL_BIN = OBL.bin
-KERNEL_BIN = Kernel.bin
+#KERNEL_BIN = Kernel.bin
+KERNEL_BIN = A2HDD.img
 
 # Libraries to build
 LIBS = libxc
