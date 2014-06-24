@@ -17,6 +17,12 @@
 _start:
 	jmp getprotected
 	
+	.byte 	'O'
+	.byte	'B'
+	.byte	'E'
+	.byte 	'R'
+	.byte	'O'
+	.byte	'N'
 	.align	8	/* Intel likes 8-byte alignment for the GDT */
 gdt:
 /* GDT[0]: Null entry, never used. */

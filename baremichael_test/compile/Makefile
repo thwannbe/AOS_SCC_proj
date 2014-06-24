@@ -35,7 +35,7 @@ CFLAGS = -O0 -m32 -Wall -Wstrict-prototypes -Wno-trigraphs \
 
 # GETPROT_ADDR must be low enough to keep the compiled getprotected.S binary
 # within a 16-bit address range.
-GETPROT_ADDR = 0x00001000
+GETPROT_ADDR = 0x000ff00
 IMG_ADDR = 0x18000000
 RESET_VEC_ADDR = 0xfffff000
 
@@ -142,8 +142,7 @@ $(IMAGE_BIN): $(O_FILES) $(LIB_RCCE) $(LIB_ARC) ld.script
 	chmod a-x $@
 
 $(RESET_VEC_BIN): $(@:%.bin=%.S)
-	#$(CC) $(CFLAGS) -DGETPROT_ADDR=$(GETPROT_ADDR) -o $(@:%.bin=%.o) $(@:%.bin=%.S)
-	$(CC) $(CFLAGS) -DGETPROT_ADDR=$(OBL_ADDR) -o $(@:%.bin=%.o) $(@:%.bin=%.S)
+	$(CC) $(CFLAGS) -DGETPROT_ADDR=$(GETPROT_ADDR) -o $(@:%.bin=%.o) $(@:%.bin=%.S)
 	$(LD) --oformat binary -Ttext 0x0 -melf_i386 -o $@ $(@:%.bin=%.o)
 	chmod a-x $@
 
