@@ -35,12 +35,14 @@ CFLAGS = -O0 -m32 -Wall -Wstrict-prototypes -Wno-trigraphs \
 
 # GETPROT_ADDR must be low enough to keep the compiled getprotected.S binary
 # within a 16-bit address range.
-GETPROT_ADDR = 0x000ff00
+GETPROT_ADDR = 0x0001000
 IMG_ADDR = 0x18000000
 RESET_VEC_ADDR = 0xfffff000
 
 OBL_ADDR = 0x00001000
-KERNEL_ADDR = 0x00100000 
+KERNEL_ADDR = 0x00100000
+#Runtime Stage Starting addr
+ENTRY_POINT = 0x0010BA10
 
 #LDFLAGS = --oformat binary -Ttext $(IMG_ADDR) -melf_i386 -e _start
 LDFLAGS = -Ttext $(IMG_ADDR) -melf_i386 -e _start
@@ -147,7 +149,7 @@ $(RESET_VEC_BIN): $(@:%.bin=%.S)
 	chmod a-x $@
 
 $(GETPROT_BIN): $(@:%.bin=%.S) ../boot/initPaging.o ld.script
-	$(CC) $(CFLAGS) -DIMG_ADDR=$(KERNEL_ADDR) -o $(@:%.bin=%.o) $(@:%.bin=%.S)
+	$(CC) $(CFLAGS) -DIMG_ADDR=$(ENTRY_POINT) -o $(@:%.bin=%.o) $(@:%.bin=%.S)
 	$(LD) --oformat binary -Ttext $(GETPROT_ADDR) -melf_i386 -e _start -o $@ $(@:%.bin=%.o) $^
 	chmod a-x $@
 
