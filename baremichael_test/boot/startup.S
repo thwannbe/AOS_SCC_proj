@@ -26,7 +26,13 @@
 .org 0x0000
 _start:
 	jmp startup
-	
+
+	.byte 	'O'
+	.byte	'B'
+	.byte	'E'
+	.byte 	'R'
+	.byte	'O'
+	.byte	'N'
 	.align	8	/* Intel likes 8-byte alignment for the GDT */
 gdt:
 /* GDT[0]: Null entry, never used. */
@@ -119,7 +125,10 @@ stdout:
 	movl	%esp,	%ebp
 
 	call	platforminit
-	call	main		/* C code! */
+	/*ljmp	$0x8, $AOS_ADDR		 jump to kernel by osw */	
+	/*
+	call	main		 C code!
+	*/
 	call	halt
 
 

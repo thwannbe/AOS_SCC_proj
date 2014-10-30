@@ -3,20 +3,25 @@
  * Based off of Embedded X86 Programming: Protected Mode by Jean Gareau
  * with help from Mike Schultz's startup.S from Embedded Xinu for x86.
  */
+
 /* BareMichael SCC baremetal framework.
  * Copyright (C) 2012.  All rights reserved. */
 
-#define STACKMAGIC 0x0A0AAAA9
+/* Modification version of get protect mode for AOS (Active Oberon System).
+ * modified by suwon, oh.
+ * Computer System And Platform Lab., SNU, Korea
+ * 29. Sep. 2014.
+ */
 
 .code16
 .text
 	.globl _start
-	.extern initPaging
 
 .org 0x0000
 _start:
 	jmp getprotected
 	
+	/* OBERON signature */
 	.byte 	'O'
 	.byte	'B'
 	.byte	'E'
@@ -51,7 +56,97 @@ gdt_desc:
 	.word	gdt_end - gdt - 1	/* gdt limit */
 	.long	gdt					/* gdt base */
 
+	.align	8	/* Intel likes 8-byte alignment for the IDT */
+idt:
+	.space	NID * 8, 0			/* must equal NID*8 */
+idt_desc:
+	.word	idt_desc - idt - 1	/* size of idt - 1 (in bytes) */
+	.long	idt
+
 getprotected:
+	/* hard code an initial boot table */
+	movw	$0x1800, %si	/* boot table locates 4 sectors after getprotected.S */
+	movl	$0x7, (%si)		/* fragmented kernel info flag = 0000_0007H */
+	add		$4, %si
+	movl	$0x1c, (%si)	/* entry length = 28 bytes */
+	add		$4, %si
+	movl	$0x2000, (%si)	/* kernel address */
+	add		$4, %si
+	movb	$1, (%si)		/* checksum */
+	add		$1, %si
+	movb	$0x0, (%si)		/* void */
+	add		$1, %si
+	movw	$0xd2, (%si)	/* number of fragments */
+	add		$2, %si
+	movl	$0x2000, (%si)	/* kernel entry point */
+	add		$4, %si
+	movl	$0x0, (%si)	/* padding 0 for packing 8 bytes */
+	add		$4, %si
+	movl	$0x3a2, (%si)	/* unknown */
+	add		$4, %si
+
+	movl	$0x8, (%si)		/* environment info */
+	add		$4, %si
+	movl	$0x4c, (%si)	/* entry length = 76 bytes */
+	add		$4, %si
+	/* environment variables start from here */
+	movl	$0x746f6f42, (%si)
+	add		$4, %si
+	movl	$0x316c6f56, (%si)
+	add		$4, %si
+	movl	$0x534f4100, (%si)
+	add		$4, %si
+	movl	$0x736f4120, (%si)
+	add		$4, %si
+	movl	$0x49205346, (%si)
+	add		$4, %si
+	movl	$0x23304544, (%si)
+	add		$4, %si
+	movl	$0x6f410031, (%si)
+	add		$4, %si
+	movl	$0x00534673, (%si)
+	add		$4, %si
+	movl	$0x6b736944, (%si)
+	add		$4, %si
+	movl	$0x756c6f56, (%si)
+	add		$4, %si
+	movl	$0x2e73656d, (%si)
+	add		$4, %si
+	movl	$0x2077654e, (%si)
+	add		$4, %si
+	movl	$0x6b736944, (%si)
+	add		$4, %si
+	movl	$0x4e2e5346, (%si)
+	add		$4, %si
+	movl	$0x53467765, (%si)
+	add		$4, %si
+	movl	$0x6f6f4200, (%si)
+	add		$4, %si
+	movl	$0x74, (%si)
+	add		$4, %si
+
+	movl	$0x3, (%si)		/* boot area type */
+	add		$4, %si
+	movl	$0x10, (%si)	/* entry length = 16 bytes */
+	add		$4, %si
+	movl	$0x1000, (%si)	/* boot area start address */
+	add		$4, %si
+	movl	$0x2000, (%si)	/* 2 pages */
+	add		$4, %si
+
+	movl	$0x4, (%si)		/* free area type */
+	add		$4, %si
+	movl	$0x10, (%si)	/* entry length = 16 bytes */
+	add		$4, %si
+	movl	$0x100000, (%si) /* free area (extended memory) */
+	add		$4, %si
+	movl	$0x1f00000, (%si)
+	add		$4, %si
+
+	/* add boot table end marker */
+	movl	$0xffffffff, (%si)
+	movl	$0x0, 4(%si)
+	
 	/* hard code an LGDT */
 	.byte	0x66		/* 32-bit operand override */
 	.byte	0x8d		/* lea (e)bx,Addr */
@@ -79,66 +174,8 @@ getprotected:
 
 .code32
 prot_world:
-	movl	$_end,	%eax	/* set stack pointer to 8k after end of startup code */
-	addl	$8*1024, %eax
-	decl	%eax			/* 16-byte align stack pointer */
-	shrl	$0x04,	%eax
-	shll	$0x04,	%eax
-	movl	%eax,	%esp
-
-	#
-	# clear Bss section
-	#
-	movl	$_end,	%ecx
-	subl	$edata,	%ecx
-	pushl	%ecx
-	pushl	$edata
-	call	_asm_bzero
-	addl	$2*4, %esp
-
-	call	initPaging
-
+	lgdt	gdt_desc
+	lidt	idt_desc
+	
 	ljmp	$0x8, $IMG_ADDR /* Jump to kernel */
 
-
-    #
-    # _asm_bzero (base, count)
-    #
-	.globl _asm_bzero
-_asm_bzero:
-	pushl	%edi
-	movl	8(%esp),	%edi
-	movl	12(%esp),	%ecx
-	movb	$0x00,	%al
-	cld
-	rep
-	stosb
-	popl	%edi
-	ret
-
-
-#define CR3_ADDR_MASK 0xfffff000
-#define CR0_PG (1 << 31)
-#define CR4_MPE (1 << 11)
-#define CR4_PSE (1 << 4)
-#define CR4_PAE (1 << 5)
-
-/* void enable_paging(ulong page_dir_loc) */
-	.globl enable_paging
-enable_paging:
-	# stuff CR3 with page_dir_loc
-	movl	4(%esp), %eax
-	andl	$CR3_ADDR_MASK, %eax
-	movl	%eax, %cr3
-	
-	# CR4: set MPE, clear PSE, clear PAE
-	movl	%cr4, %eax
-	orl 	$CR4_MPE, %eax
-	andl	$~(CR4_PSE | CR4_PAE), %eax
-	movl	%eax, %cr4
-
-	# CR0: set PG bit
-	movl	%cr0, %eax
-	orl 	$CR0_PG, %eax
-	movl	%eax, %cr0
-	ret
