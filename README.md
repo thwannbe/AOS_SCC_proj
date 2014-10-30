@@ -1,4 +1,4 @@
-suwon
+AOS_SCC_project
 =====
 
 This repository is made by Oh suwon, Mar 11, 2014.
